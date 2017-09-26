@@ -29,8 +29,9 @@ class SharedPicsCollectionViewDataSource: NSObject, UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageView", for: indexPath)
         
         if let imageView = cell.viewWithTag(1000) as? UIImageView {
-            
-            imageView.image = images[indexPath.row]
+            DispatchQueue.main.async {
+                imageView.image = self.images[indexPath.row]
+            }
         }
         return cell
     }

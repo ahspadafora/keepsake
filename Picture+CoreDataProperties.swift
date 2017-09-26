@@ -17,5 +17,7 @@ extension Picture {
     }
 
     @NSManaged public var imageData: NSData?
+    @NSManaged public var date: NSDate?
 
+    
 }

@@ -10,17 +10,23 @@ import UIKit
 import MultipeerConnectivity
 import CoreData
 
-class ViewController: UICollectionViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+class ViewController: UICollectionViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, NSFetchedResultsControllerDelegate {
     
-    var images: [UIImage] = [] {
-        didSet {
-            self.collectionView?.reloadData()
-        }
-    }
+    
+    var pics: [Picture]?
     var peerID: MCPeerID!
     var mcSession: MCSession!
     var mcAdvertiserAssistant: MCAdvertiserAssistant!
-    var managedContext: NSManagedObjectContext!
+    var managedContext: NSManagedObjectContext! {
+        didSet {
+            do {
+                try self.fetchedResultsController.performFetch()
+            } catch {
+                print(error)
+            }
+            
+        }
+    }
     let appD = UIApplication.shared.delegate as! AppDelegate
     var dataSource: SharedPicsCollectionViewDataSource!
     
@@ -28,23 +34,65 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
         self.setUpNavBar()
+       
         
-        appD.coreDataStack.fetchImages(callback: { (pictures) in
-            guard let safePics = pictures else { return }
-            for pic in safePics {
-                let image = pic.uiImage()
-                self.images.insert(image, at: 0)
-            }
-            self.dataSource = SharedPicsCollectionViewDataSource(images: self.images, cellIdentifier: "ImageView")
-            self.collectionView?.dataSource = self.dataSource
-            self.collectionView?.reloadData()
-        })
-        
+        do {
+            try self.fetchedResultsController.performFetch()
+        }
+        catch {
+            print("Error fetching images: \(error)")
+        }
         
         peerID = MCPeerID(displayName: UIDevice.current.name)
         mcSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
-        
         mcSession.delegate = self
+    }
+    
+    fileprivate lazy var fetchedResultsController: NSFetchedResultsController<Picture> = {
+        let fetchRequest: NSFetchRequest<Picture> = Picture.fetchRequest()
+        let sortDescriptor = NSSortDescriptor(key: "date", ascending: false)
+        fetchRequest.sortDescriptors = [sortDescriptor]
+        let fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.managedContext, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultsController.delegate = self
+        return fetchedResultsController
+    }()
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        guard let images = self.fetchedResultsController.fetchedObjects else { return 0 }
+        return images.count
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageView", for: indexPath)
+        
+        if let imageView = cell.viewWithTag(1000) as? UIImageView {
+            DispatchQueue.main.async {
+                let pic = self.fetchedResultsController.object(at: indexPath) as Picture
+                imageView.image = pic.uiImage()
+            }
+        }
+        return cell
+    }
+    
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        print("controller changed content")
+        do {
+            try self.fetchedResultsController.performFetch()
+            self.collectionView?.reloadData()
+        }
+        catch {
+            print(error)
+        }
+    }
+    
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        do {
+            try self.fetchedResultsController.performFetch()
+            self.collectionView?.reloadData()
+        }
+        catch {
+            print(error)
+        }
     }
     
     // displaying an alert controller
@@ -84,14 +132,15 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         
         if let imageData = UIImagePNGRepresentation(image) {
             appD.coreDataStack.addPhoto(image: imageData)
-            appD.coreDataStack.fetchImages(callback: { (pictures) in
-                guard let safePics = pictures else { return }
-                for pic in safePics {
-                    self.images.removeAll()
-                    let image = pic.uiImage()
-                    self.images.insert(image, at: 0)
-                }
-            })
+//            appD.coreDataStack.fetchImages(callback: { (pictures) in
+//                guard let safePics = pictures else { return }
+//                for pic in safePics {
+//                    self.images.removeAll()
+//                    let image = pic.uiImage()
+//                    self.images.insert(image, at: 0)
+//                }
+//                self.collectionView?.reloadData()
+//            })
             
             if mcSession.connectedPeers.count > 0 {
                 do {
@@ -128,13 +177,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
 extension ViewController: MCSessionDelegate {
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         self.appD.coreDataStack.addPhoto(image: data)
-        if let image = UIImage(data: data) {
-            DispatchQueue.main.async {
-                [unowned self] in
-                self.images.insert(image, at: 0)
-                self.collectionView?.reloadData()
-            }
-        }
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {

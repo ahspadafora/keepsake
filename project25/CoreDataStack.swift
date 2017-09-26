@@ -46,6 +46,7 @@ class CoreDataStack {
         do {
             let coreDataImage = Picture(context: managedContext)
             coreDataImage.imageData = NSData(data: image)
+            coreDataImage.date = NSDate()
             try managedContext.save()
         }
         catch {
