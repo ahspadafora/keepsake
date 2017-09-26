@@ -68,30 +68,4 @@ class CoreDataStack {
         }
     }
     
-//    func fetchImages(){
-//        let imageFetch: NSFetchRequest<Picture> = Picture.fetchRequest()
-//        do {
-//            let results = try managedContext.fetch(imageFetch)
-//            if results.count > 0 {
-//                self.images.removeAll()
-//                print("There are images saved in core data: \(results.count)")
-//                for result in results {
-//                    guard let imageData: Data = result.imageData as Data? else { return }
-//                    guard let image = UIImage(data: imageData) else { return }
-//                    self.images.insert(image, at: 0)
-//                    self.collectionView?.reloadData()
-//                }
-//            } else {
-//                print("There are no images save in core data")
-//            }
-//        }
-//        catch let error as NSError {
-//            print("Fetch error: \(error) description: \(error.userInfo)")
-//        }
-//        
-//    }
-
-    
-    
-    
 }

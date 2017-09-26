@@ -83,8 +83,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         dismiss(animated: true)
         
         if let imageData = UIImagePNGRepresentation(image) {
-            
-            appD.coreDataStack.saveContext()
             appD.coreDataStack.addPhoto(image: imageData)
             appD.coreDataStack.fetchImages(callback: { (pictures) in
                 guard let safePics = pictures else { return }
@@ -105,7 +103,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
                     present(ac, animated: true)
                 }
             }
-            
         }
         
     }
@@ -131,13 +128,9 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
 extension ViewController: MCSessionDelegate {
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         self.appD.coreDataStack.addPhoto(image: data)
-        
         if let image = UIImage(data: data) {
             DispatchQueue.main.async {
                 [unowned self] in
-                
-                self.appD.coreDataStack.addPhoto(image: data)
-                
                 self.images.insert(image, at: 0)
                 self.collectionView?.reloadData()
             }
@@ -145,7 +138,6 @@ extension ViewController: MCSessionDelegate {
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {
-        
     }
     
     func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL, withError error: Error?) {
