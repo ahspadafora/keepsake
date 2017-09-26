@@ -18,6 +18,7 @@
 		04791F4F1F790577009A8F1B /* Shared Pic.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 04791F4D1F790577009A8F1B /* Shared Pic.xcdatamodeld */; };
 		04791F521F790838009A8F1B /* Picture+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04791F501F790838009A8F1B /* Picture+CoreDataClass.swift */; };
 		04791F531F790838009A8F1B /* Picture+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04791F511F790838009A8F1B /* Picture+CoreDataProperties.swift */; };
+		04791F551F79C671009A8F1B /* SharedPicsCollectionViewDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04791F541F79C671009A8F1B /* SharedPicsCollectionViewDataSource.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +56,7 @@
 		04791F4E1F790577009A8F1B /* Shared Pic.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Shared Pic.xcdatamodel"; sourceTree = "<group>"; };
 		04791F501F790838009A8F1B /* Picture+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Picture+CoreDataClass.swift"; path = "../Picture+CoreDataClass.swift"; sourceTree = "<group>"; };
 		04791F511F790838009A8F1B /* Picture+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Picture+CoreDataProperties.swift"; path = "../Picture+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		04791F541F79C671009A8F1B /* SharedPicsCollectionViewDataSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SharedPicsCollectionViewDataSource.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,16 +107,12 @@
 		04791F191F789483009A8F1B /* project25 */ = {
 			isa = PBXGroup;
 			children = (
-				04791F501F790838009A8F1B /* Picture+CoreDataClass.swift */,
-				04791F511F790838009A8F1B /* Picture+CoreDataProperties.swift */,
-				04791F4D1F790577009A8F1B /* Shared Pic.xcdatamodeld */,
-				04791F1A1F789483009A8F1B /* AppDelegate.swift */,
-				04791F1C1F789483009A8F1B /* ViewController.swift */,
-				04791F481F790163009A8F1B /* CoreDataStack.swift */,
-				04791F1E1F789484009A8F1B /* Main.storyboard */,
-				04791F211F789484009A8F1B /* Assets.xcassets */,
-				04791F231F789484009A8F1B /* LaunchScreen.storyboard */,
-				04791F261F789484009A8F1B /* Info.plist */,
+				04791F581F79D28A009A8F1B /* Core Data */,
+				04791F591F79D28F009A8F1B /* AppDelegate */,
+				04791F5C1F79D2AA009A8F1B /* Controllers */,
+				04791F5A1F79D296009A8F1B /* DataSource */,
+				04791F5B1F79D2A5009A8F1B /* Views */,
+				04791F5D1F79D2B1009A8F1B /* Supporting Files */,
 			);
 			path = project25;
 			sourceTree = "<group>";
@@ -135,6 +133,59 @@
 				04791F3C1F789484009A8F1B /* Info.plist */,
 			);
 			path = project25UITests;
+			sourceTree = "<group>";
+		};
+		04791F581F79D28A009A8F1B /* Core Data */ = {
+			isa = PBXGroup;
+			children = (
+				04791F481F790163009A8F1B /* CoreDataStack.swift */,
+				04791F501F790838009A8F1B /* Picture+CoreDataClass.swift */,
+				04791F511F790838009A8F1B /* Picture+CoreDataProperties.swift */,
+				04791F4D1F790577009A8F1B /* Shared Pic.xcdatamodeld */,
+			);
+			name = "Core Data";
+			sourceTree = "<group>";
+		};
+		04791F591F79D28F009A8F1B /* AppDelegate */ = {
+			isa = PBXGroup;
+			children = (
+				04791F1A1F789483009A8F1B /* AppDelegate.swift */,
+			);
+			name = AppDelegate;
+			sourceTree = "<group>";
+		};
+		04791F5A1F79D296009A8F1B /* DataSource */ = {
+			isa = PBXGroup;
+			children = (
+				04791F541F79C671009A8F1B /* SharedPicsCollectionViewDataSource.swift */,
+			);
+			name = DataSource;
+			sourceTree = "<group>";
+		};
+		04791F5B1F79D2A5009A8F1B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				04791F1E1F789484009A8F1B /* Main.storyboard */,
+			);
+			name = Views;
+			sourceTree = "<group>";
+		};
+		04791F5C1F79D2AA009A8F1B /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				04791F1C1F789483009A8F1B /* ViewController.swift */,
+			);
+			name = Controllers;
+			sourceTree = "<group>";
+		};
+		04791F5D1F79D2B1009A8F1B /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				04791F211F789484009A8F1B /* Assets.xcassets */,
+				04791F231F789484009A8F1B /* LaunchScreen.storyboard */,
+				04791F261F789484009A8F1B /* Info.plist */,
+			);
+			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -274,6 +325,7 @@
 			files = (
 				04791F531F790838009A8F1B /* Picture+CoreDataProperties.swift in Sources */,
 				04791F491F790163009A8F1B /* CoreDataStack.swift in Sources */,
+				04791F551F79C671009A8F1B /* SharedPicsCollectionViewDataSource.swift in Sources */,
 				04791F1D1F789483009A8F1B /* ViewController.swift in Sources */,
 				04791F4F1F790577009A8F1B /* Shared Pic.xcdatamodeld in Sources */,
 				04791F521F790838009A8F1B /* Picture+CoreDataClass.swift in Sources */,
@@ -528,6 +580,7 @@
 				04791F411F789484009A8F1B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		04791F421F789484009A8F1B /* Build configuration list for PBXNativeTarget "project25Tests" */ = {
 			isa = XCConfigurationList;
@@ -536,6 +589,7 @@
 				04791F441F789484009A8F1B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		04791F451F789484009A8F1B /* Build configuration list for PBXNativeTarget "project25UITests" */ = {
 			isa = XCConfigurationList;
@@ -544,6 +598,7 @@
 				04791F471F789484009A8F1B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 

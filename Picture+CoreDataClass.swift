@@ -7,9 +7,15 @@
 //
 
 import Foundation
+import UIKit
 import CoreData
 
 @objc(Picture)
 public class Picture: NSManagedObject {
-
+    func uiImage() -> UIImage {
+        guard let image = UIImage(data: self.imageData! as Data) else {
+            return UIImage()
+        }
+        return image
+    }
 }

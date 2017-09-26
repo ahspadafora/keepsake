@@ -12,25 +12,47 @@ import CoreData
 
 class ViewController: UICollectionViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
     
-    var images: [UIImage] = []
+    var images: [UIImage] = [] {
+        didSet {
+            self.collectionView?.reloadData()
+        }
+    }
     var peerID: MCPeerID!
     var mcSession: MCSession!
     var mcAdvertiserAssistant: MCAdvertiserAssistant!
     var managedContext: NSManagedObjectContext!
+    let appD = UIApplication.shared.delegate as! AppDelegate
+    var dataSource: SharedPicsCollectionViewDataSource!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.setUpNavBar()
-        self.fetchImages()
+        
+        appD.coreDataStack.fetchImages(callback: { (pictures) in
+            guard let safePics = pictures else { return }
+            for pic in safePics {
+                let image = pic.uiImage()
+                self.images.insert(image, at: 0)
+            }
+            self.dataSource = SharedPicsCollectionViewDataSource(images: self.images, cellIdentifier: "ImageView")
+            self.collectionView?.dataSource = self.dataSource
+            self.collectionView?.reloadData()
+        })
+        
+        
         peerID = MCPeerID(displayName: UIDevice.current.name)
         mcSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
+        
         mcSession.delegate = self
     }
-
+    
+    // displaying an alert controller
     @objc func importPhotos() {
-        let ac = UIAlertController(title: "Choose a pic", message: "Choose an image to share", preferredStyle: .actionSheet)
+        let ac = UIAlertController(title: "Select an image source", message: "", preferredStyle: .actionSheet)
         ac.addAction(UIAlertAction(title: "Take a picture", style: .default, handler: openCamera))
         ac.addAction(UIAlertAction(title: "Choose from library", style: .default, handler: displayImagePicker))
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(ac, animated: true)
     }
     
@@ -38,6 +60,7 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         // add camera functionality
     }
     
+    // displays an image picker controller
     @objc func displayImagePicker(action: UIAlertAction) {
         let picker = UIImagePickerController()
         picker.allowsEditing = true
@@ -45,6 +68,7 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         present(picker, animated: true)
     }
     
+    // displays an alert controller
     @objc func showConnectionPrompt() {
         let ac = UIAlertController(title: "Connect to others", message: nil, preferredStyle: .actionSheet)
         ac.addAction(UIAlertAction(title: "Host a session", style: .default, handler: startHosting))
@@ -52,22 +76,24 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(ac, animated: true)
     }
-
+    
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
         
         guard let image = info[UIImagePickerControllerEditedImage] as? UIImage else { return }
         dismiss(animated: true)
         
         if let imageData = UIImagePNGRepresentation(image) {
-            do {
-                let coreDataImg = Picture(context: managedContext)
-                coreDataImg.imageData = NSData(data: imageData)
-                try managedContext.save()
-                self.fetchImages()
-            }
-            catch {
-                print("error: \(error.localizedDescription)")
-            }
+            
+            appD.coreDataStack.saveContext()
+            appD.coreDataStack.addPhoto(image: imageData)
+            appD.coreDataStack.fetchImages(callback: { (pictures) in
+                guard let safePics = pictures else { return }
+                for pic in safePics {
+                    self.images.removeAll()
+                    let image = pic.uiImage()
+                    self.images.insert(image, at: 0)
+                }
+            })
             
             if mcSession.connectedPeers.count > 0 {
                 do {
@@ -94,46 +120,24 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         mcBrowser.delegate = self
         present(mcBrowser, animated: true)
     }
-    
-    
-    
-    
-    func fetchImages(){
-        let imageFetch: NSFetchRequest<Picture> = Picture.fetchRequest()
-        do {
-            let results = try managedContext.fetch(imageFetch)
-            if results.count > 0 {
-                self.images.removeAll()
-                print("There are images saved in core data: \(results.count)")
-                for result in results {
-                    guard let imageData: Data = result.imageData as Data? else { return }
-                    guard let image = UIImage(data: imageData) else { return }
-                    self.images.insert(image, at: 0)
-                    self.collectionView?.reloadData()
-                }
-            } else {
-                print("There are no images save in core data")
-            }
-        }
-        catch let error as NSError {
-            print("Fetch error: \(error) description: \(error.userInfo)")
-        }
 
-    }
     func setUpNavBar(){
         self.title = "Selfie Share"
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(importPhotos))
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showConnectionPrompt))
     }
-    
-    
 }
 
 extension ViewController: MCSessionDelegate {
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        self.appD.coreDataStack.addPhoto(image: data)
+        
         if let image = UIImage(data: data) {
             DispatchQueue.main.async {
                 [unowned self] in
+                
+                self.appD.coreDataStack.addPhoto(image: data)
+                
                 self.images.insert(image, at: 0)
                 self.collectionView?.reloadData()
             }
@@ -171,25 +175,9 @@ extension ViewController: MCBrowserViewControllerDelegate {
     func browserViewControllerWasCancelled(_ browserViewController: MCBrowserViewController) {
         dismiss(animated: true)
     }
-
-}
-
-extension ViewController {
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return images.count
-    }
     
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageView", for: indexPath)
-        
-        if let imageView = cell.viewWithTag(1000) as? UIImageView {
-            imageView.image = images[indexPath.row]
-        }
-        return cell
-    }
-
 }
+
 
 
 

@@ -41,4 +41,57 @@ class CoreDataStack {
             print("Unresolved error: \(error), \(error.userInfo)")
         }
     }
+    
+    func addPhoto(image: Data) {
+        do {
+            let coreDataImage = Picture(context: managedContext)
+            coreDataImage.imageData = NSData(data: image)
+            try managedContext.save()
+        }
+        catch {
+            print("error: \(error.localizedDescription)")
+        }
+    }
+    
+    func fetchImages(callback: @escaping ([Picture]?) -> Void) {
+        let imageFetch: NSFetchRequest<Picture> = Picture.fetchRequest()
+        do {
+            let results = try managedContext.fetch(imageFetch)
+            guard results.count > 0 else {
+                print("There are no images saved in core data")
+                return
+            }
+            callback(results)
+        }
+        catch let error as NSError {
+            print("Fetch error: \(error) description: \(error.userInfo)")
+        }
+    }
+    
+//    func fetchImages(){
+//        let imageFetch: NSFetchRequest<Picture> = Picture.fetchRequest()
+//        do {
+//            let results = try managedContext.fetch(imageFetch)
+//            if results.count > 0 {
+//                self.images.removeAll()
+//                print("There are images saved in core data: \(results.count)")
+//                for result in results {
+//                    guard let imageData: Data = result.imageData as Data? else { return }
+//                    guard let image = UIImage(data: imageData) else { return }
+//                    self.images.insert(image, at: 0)
+//                    self.collectionView?.reloadData()
+//                }
+//            } else {
+//                print("There are no images save in core data")
+//            }
+//        }
+//        catch let error as NSError {
+//            print("Fetch error: \(error) description: \(error.userInfo)")
+//        }
+//        
+//    }
+
+    
+    
+    
 }
