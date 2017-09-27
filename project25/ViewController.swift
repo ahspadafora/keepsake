@@ -10,8 +10,7 @@ import UIKit
 import MultipeerConnectivity
 import CoreData
 
-class ViewController: UICollectionViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, NSFetchedResultsControllerDelegate {
-    
+class ViewController: UICollectionViewController {
     
     var pics: [Picture]?
     var peerID: MCPeerID!
@@ -26,12 +25,15 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
             }
         }
     }
+    let picker = UIImagePickerController()
     let appD = UIApplication.shared.delegate as! AppDelegate
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.setUpNavBar()
         
+        self.picker.allowsEditing = true
+        self.picker.delegate = self
         peerID = MCPeerID(displayName: UIDevice.current.name)
         mcSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         mcSession.delegate = self
@@ -45,24 +47,98 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         fetchedResultsController.delegate = self
         return fetchedResultsController
     }()
-    
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        guard let images = self.fetchedResultsController.fetchedObjects else { return 0 }
-        return images.count
+
+    // displaying an alert controller
+    @objc func importPhotos() {
+        let ac = UIAlertController(title: "Select an image source", message: "", preferredStyle: .actionSheet)
+        ac.addAction(UIAlertAction(title: "Take a picture", style: .default, handler: openCamera))
+        ac.addAction(UIAlertAction(title: "Choose from library", style: .default, handler: openPhotoLibrary))
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(ac, animated: true)
     }
     
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageView", for: indexPath)
+    @objc func openCamera(action: UIAlertAction){
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) == true else {
+            print("No camera available")
+            return
+        }
+        self.picker.sourceType = .camera
+        self.picker.allowsEditing = true
+        present(self.picker, animated: true)
+    }
+    
+    @objc func openPhotoLibrary(action: UIAlertAction) {
+        self.picker.sourceType = .photoLibrary
+        present(self.picker, animated: true)
+    }
+    
+    @objc func showConnectionPrompt() {
+        let ac = UIAlertController(title: "Connect to others", message: nil, preferredStyle: .actionSheet)
+        ac.addAction(UIAlertAction(title: "Host a session", style: .default, handler: startHosting))
+        ac.addAction(UIAlertAction(title: "Join a session", style: .default, handler: joinSession))
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(ac, animated: true)
+    }
+    
+    func startHosting(action: UIAlertAction) {
+        mcAdvertiserAssistant = MCAdvertiserAssistant(serviceType: "hws-project25", discoveryInfo: nil, session: mcSession)
+        mcAdvertiserAssistant.start()
+    }
+    func joinSession(action: UIAlertAction) {
+        let mcBrowser = MCBrowserViewController(serviceType: "hws-project25", session: mcSession)
+        mcBrowser.delegate = self
+        present(mcBrowser, animated: true)
+    }
+    func setUpNavBar(){
+        self.title = "Selfie Share"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(importPhotos))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showConnectionPrompt))
+    }
+}
+
+extension ViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
-        if let imageView = cell.viewWithTag(1000) as? UIImageView {
-            DispatchQueue.main.async {
-                let pic = self.fetchedResultsController.object(at: indexPath) as Picture
-                imageView.image = pic.uiImage()
+        let cellWidth = (self.collectionView?.frame.width)!/2
+        let cellHeight = cellWidth
+        return CGSize(width: cellWidth, height: cellHeight)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
+        return UIEdgeInsetsMake(0, 0, 0, 0)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+        return 0.0
+    }
+}
+
+extension ViewController: UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        
+        guard let image = info[UIImagePickerControllerEditedImage] as? UIImage else { return }
+        self.dismiss(animated: true)
+        
+        if let imageData = UIImagePNGRepresentation(image) {
+            appD.coreDataStack.addPhoto(image: imageData)
+            
+            if mcSession.connectedPeers.count > 0 {
+                do {
+                    try mcSession.send(imageData, toPeers: mcSession.connectedPeers, with: .reliable)
+                }
+                catch {
+                    let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
+                    ac.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(ac, animated: true)
+                }
             }
         }
-        return cell
+        
     }
-    
+}
+
+extension ViewController: NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         print("controller changed content")
         do {
@@ -82,75 +158,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         catch {
             print(error)
         }
-    }
-    
-    // displaying an alert controller
-    @objc func importPhotos() {
-        let ac = UIAlertController(title: "Select an image source", message: "", preferredStyle: .actionSheet)
-        ac.addAction(UIAlertAction(title: "Take a picture", style: .default, handler: openCamera))
-        ac.addAction(UIAlertAction(title: "Choose from library", style: .default, handler: displayImagePicker))
-        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(ac, animated: true)
-    }
-    
-    @objc func openCamera(action: UIAlertAction){
-        // add camera functionality
-    }
-    
-    // displays an image picker controller
-    @objc func displayImagePicker(action: UIAlertAction) {
-        let picker = UIImagePickerController()
-        picker.allowsEditing = true
-        picker.delegate = self
-        present(picker, animated: true)
-    }
-    
-    // displays an alert controller
-    @objc func showConnectionPrompt() {
-        let ac = UIAlertController(title: "Connect to others", message: nil, preferredStyle: .actionSheet)
-        ac.addAction(UIAlertAction(title: "Host a session", style: .default, handler: startHosting))
-        ac.addAction(UIAlertAction(title: "Join a session", style: .default, handler: joinSession))
-        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(ac, animated: true)
-    }
-    
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
-        
-        guard let image = info[UIImagePickerControllerEditedImage] as? UIImage else { return }
-        dismiss(animated: true)
-        
-        if let imageData = UIImagePNGRepresentation(image) {
-            appD.coreDataStack.addPhoto(image: imageData)
-            
-            if mcSession.connectedPeers.count > 0 {
-                do {
-                    try mcSession.send(imageData, toPeers: mcSession.connectedPeers, with: .reliable)
-                }
-                catch {
-                    let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
-                    ac.addAction(UIAlertAction(title: "OK", style: .default))
-                    present(ac, animated: true)
-                }
-            }
-        }
-        
-    }
-    
-    func startHosting(action: UIAlertAction) {
-        mcAdvertiserAssistant = MCAdvertiserAssistant(serviceType: "hws-project25", discoveryInfo: nil, session: mcSession)
-        mcAdvertiserAssistant.start()
-    }
-    
-    func joinSession(action: UIAlertAction) {
-        let mcBrowser = MCBrowserViewController(serviceType: "hws-project25", session: mcSession)
-        mcBrowser.delegate = self
-        present(mcBrowser, animated: true)
-    }
-
-    func setUpNavBar(){
-        self.title = "Selfie Share"
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(importPhotos))
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(showConnectionPrompt))
     }
 }
 
@@ -190,6 +197,25 @@ extension ViewController: MCBrowserViewControllerDelegate {
         dismiss(animated: true)
     }
     
+}
+
+extension ViewController {
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        guard let images = self.fetchedResultsController.fetchedObjects else { return 0 }
+        return images.count
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageView", for: indexPath)
+        
+        if let imageView = cell.viewWithTag(1000) as? UIImageView {
+            DispatchQueue.main.async {
+                let pic = self.fetchedResultsController.object(at: indexPath) as Picture
+                imageView.image = pic.uiImage()
+            }
+        }
+        return cell
+    }
 }
 
 

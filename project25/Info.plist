@@ -26,6 +26,8 @@
 	<string>Main</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Selfie Share would like to access your photo library in order to share images with your friends!</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Selfie share would like access to your camera, to allow you to capture and share images</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
