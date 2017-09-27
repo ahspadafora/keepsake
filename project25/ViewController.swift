@@ -24,24 +24,13 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
             } catch {
                 print(error)
             }
-            
         }
     }
     let appD = UIApplication.shared.delegate as! AppDelegate
-    var dataSource: SharedPicsCollectionViewDataSource!
-    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.setUpNavBar()
-       
-        
-        do {
-            try self.fetchedResultsController.performFetch()
-        }
-        catch {
-            print("Error fetching images: \(error)")
-        }
         
         peerID = MCPeerID(displayName: UIDevice.current.name)
         mcSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
@@ -132,15 +121,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         
         if let imageData = UIImagePNGRepresentation(image) {
             appD.coreDataStack.addPhoto(image: imageData)
-//            appD.coreDataStack.fetchImages(callback: { (pictures) in
-//                guard let safePics = pictures else { return }
-//                for pic in safePics {
-//                    self.images.removeAll()
-//                    let image = pic.uiImage()
-//                    self.images.insert(image, at: 0)
-//                }
-//                self.collectionView?.reloadData()
-//            })
             
             if mcSession.connectedPeers.count > 0 {
                 do {
