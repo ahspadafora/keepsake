@@ -63,7 +63,6 @@ class ViewController: UICollectionViewController {
             return
         }
         self.picker.sourceType = .camera
-        self.picker.allowsEditing = true
         present(self.picker, animated: true)
     }
     
